@@ -11,7 +11,10 @@ client_status = mqtt.Client()
 
 humidity:str = ""
 message_log:str = ""
-pump_status:str = ""
+is_new_message:bool = False
+is_pump_on:bool = False
+is_system_on:bool = False
+is_led_on:bool = False
 
 def main():
 	global client_tower01
@@ -35,7 +38,7 @@ def index() -> str:
 	"""
 	The webpage ui for the aquaponics system.
 	"""
-	global pump_status
+	global is_pump_on
 	global message_log
 
 	if request.method == 'POST':
@@ -50,7 +53,7 @@ def index() -> str:
 
 	return render_template(
 		"index.html",
-		pump_status=pump_status,
+		pump_status=is_pump_on,
 		message_log=message_log,
 	)
 
@@ -69,6 +72,20 @@ def led_on():
 	client_tower01.publish("cmnd/tower01_led/POWER", payload="ON")
 
 
+def pump_off():
+	"""
+	Turns the aquaponics pump off.
+	"""
+	client_tower01.publish("cmnd/tower_01_pump/POWER", payload="OFF")
+
+
+def pump_on():
+	"""
+	Turns the aquaponics pump on.
+	"""
+	client_tower01.publish("cmnd/tower_01_pump/POWER", payload="ON")
+
+
 def system_off():
 	"""
 	Turns the aquaponics system off.
@@ -83,41 +100,71 @@ def system_on():
 	client_tower01.publish("tower_01/enabled", payload=True)
 
 
-@app.route('/humidity', methods=['GET'])
-def _get_humidity():
-	global humidity
-	return str(humidity)
-
-
-@app.route('/pump_status', methods=['GET'])
-def _get_pump_status():
-	global pump_status
-	return str(pump_status)
+@app.route('/message', methods=['GET'])
+def _get_message():
+	global message_log
+	return message_log
 
 
 @app.route('/state', methods=['GET'])
 def _get_state():
 	global humidity
-	global pump_status
-	return {"humidity": humidity, "pump_status": pump_status}
+	global is_pump_on
+	global is_new_message
+	global is_system_on
+	global is_led_on
 
-
-@app.route('/system_on', methods=['POST'])
-def _on_system_on():
-	assert request.method == 'POST'
-	system_on()
+	payload = {
+		"humidity": humidity,
+		"is_new_message": is_new_message,
+		"is_pump_on": is_pump_on,
+		"is_system_on": is_system_on,
+		"is_led_on": is_led_on,
+	}
+	is_new_message = False
+	return payload
 
 
 @app.route('/led_on', methods=['POST'])
 def _on_led_on():
 	assert request.method == 'POST'
 	led_on()
+	return 200
 
 
 @app.route('/led_off', methods=['POST'])
 def _on_led_off():
 	assert request.method == 'POST'
 	led_off()
+	return 200
+
+
+@app.route('/pump_on', methods=['POST'])
+def _on_pump_on():
+	assert request.method == 'POST'
+	pump_on()
+	return 200
+
+
+@app.route('/pump_off', methods=['POST'])
+def _on_pump_off():
+	assert request.method == 'POST'
+	pump_off()
+	return 200
+
+
+@app.route('/system_off', methods=['POST'])
+def _on_system_off():
+	assert request.method == 'POST'
+	system_off()
+	return 200
+
+
+@app.route('/system_on', methods=['POST'])
+def _on_system_on():
+	assert request.method == 'POST'
+	system_on()
+	return 200
 
 
 def _on_got_tower_message(client, userdata, msg):
@@ -125,21 +172,26 @@ def _on_got_tower_message(client, userdata, msg):
 	Handles messages received.
 	"""
 	global message_log
-	global pump_status
+	global is_new_message
+	global is_pump_on
+	global is_system_on
+	global is_led_on
 
-	ignore = ["tele/tower_01_pump/STATE", "tele/tower_01_pump/SENSOR", "stat/tower_01_pump/STATUS8",
-		"tele/tower_01_monitor/STATE", "tele/tower_01_monitor/SENSOR", "stat/tower_01_monitor/STATUS8", 
-		"stat/tower_01_monitor/STATUS8", "cmnd/tower_01_monitor/status",
-		"tele/tower01_led/STATE", "tele/tower01_led/SENSOR", "stat/tower01_led/STATUS8"]
-	if "tower01" in msg.topic or "tower_01" in msg.topic:
-		message_log = f"{message_log}\n{msg.payload.decode('UTF-8')}"
+	message_log = f"{msg.topic}: {msg.payload.decode('UTF-8')}\n{message_log}"
+	message_log = message_log[:min(len(message_log),1000)]
+	is_new_message = True
 			
-	# Extract the pump status from the JSON payload if the topic is correct
-	print(msg.topic, msg.payload.decode('UTF-8'))
+	# Extract the pump status
 	if msg.topic == "stat/tower_01_pump/POWER":
-		print("PUMP", msg.payload.decode('UTF-8'), msg.payload)
-		pump_status = msg.payload.decode('UTF-8')
-		message_log = f"{message_log}\n{msg.payload.decode('UTF-8')}"
+		is_pump_on = msg.payload.decode('UTF-8') == "ON"
+
+	# Extract the system status 
+	if msg.topic == "tower_01/enabled":
+		is_system_on = msg.payload.decode('UTF-8') == "True"
+	
+	# Extract the LED status 
+	if msg.topic == "stat/tower01_led/POWER":
+		is_led_on = msg.payload.decode('UTF-8') == "ON"
 
 
 def _on_got_status_message(client, userdata, msg):
@@ -147,6 +199,7 @@ def _on_got_status_message(client, userdata, msg):
 	# Extract the humidity value from the JSON payload
 	payload = json.loads(msg.payload)
 	humidity = payload.get("StatusSNS", {}).get("ANALOG", {}).get("A0", "N/A")
+	humidity = min((719 - float(humidity))/421 * 100, 100)
     
 
 if __name__ == "__main__":

@@ -8,6 +8,10 @@
 				width: 100%;
     			box-sizing: border-box;
 			}
+			#hcontainer > div
+			{
+				display: inline-block;
+			}
 		</style>
 
 		<script>
@@ -19,11 +23,26 @@
 				fetch("/state")
 					.then((response) => response.json())
 					.then((data) => {
-					console.log(data, data.pump_status, data.humidity);
-					document.getElementById("pump_status_label")
-						.innerHTML = data.pump_status;
 					document.getElementById("humidity_label")
 						.innerHTML = data.humidity;
+
+					// Update buttons
+					document.getElementById("system_toggle")
+						.checked = data.is_system_on;
+					document.getElementById("led_toggle")
+						.checked = data.is_led_on;
+					document.getElementById("pump_toggle")
+						.checked = data.is_pump_on;
+					
+					// Update message log
+					if (data.is_new_message) {
+						fetch("/message")
+							.then((response) => response.text())
+							.then((data) => {
+								document.getElementById("msg_log")
+									.innerHTML = data;
+							})
+					}
 					});
 			}
 
@@ -33,20 +52,29 @@
 				alert(result.answer);
 			}
 
-			function _on_system_off_pressed() {
-				post("/system_off")
+			function _on_system_toggled(checkbox) {
+				if (checkbox.checked) {
+					post("/system_on");
+				} else {
+					post("/system_off");
+				}
 			}
 
-			function _on_system_on_pressed() {
-				post("/system_on")
+			function _on_led_toggled(checkbox) {
+				if (checkbox.checked) {
+					post("/led_on");
+				} else {
+					post("/led_off");
+				}
 			}
 
-			function _on_led_off_pressed() {
-				post("/led_off")
-			}
 
-			function _on_led_on_pressed() {
-				post("/led_on")
+			function _on_pump_toggled(checkbox) {
+				if (checkbox.checked) {
+					post("/pump_on");
+				} else {
+					post("/pump_off");
+				}
 			}
 
 		</script>
@@ -57,25 +85,44 @@
 
 		<h1>Aquaponics System Control</h1>
 
-		<h3>Message Log</h3>
+		<h4>Message Log</h4>
 		<textarea id="msg_log" name="msg_log" rows="8" cols="100" readonly>
-			{{message_log}}
 		</textarea>
+		
+		<div id="hcontainer">
+			<div><h4>Humidity</h4></div>
+			<div id="humidity_label">-</div>
+		</div>
 
-		<div><h3>Pump Status <div id="pump_status_label">-</div></h3></div>
-		<h3>Humidity <div id="humidity_label">-</div></h3>
+		<!-- SYSTEM -->
+		<div id="hcontainer">
+			<div><h4>System</h4></div>
+			<div id="hcontainer">
+				<div>
+					<input id="system_toggle" type="checkbox" name="system_toggle" onclick="_on_system_toggled(this)">
+				</div>
+			</div>
+		</div>
 
-		<h3>
-		System
-		<input type="button" name="system_on" value="On" onclick="_on_system_on_pressed()">
-		<input type="button" name="system_off" value="Off" onclick="_on_system_off_pressed()">
-		</h3>
+		<!-- LED -->
+		<div id="hcontainer">
+			<div><h4>LED</h4></div>
+			<div id="hcontainer">
+				<div>
+					<input id="led_toggle" type="checkbox" name="led_toggle" onclick="_on_led_toggled(this)">
+				</div>
+			</div>
+		</div>
 
-		<h3>
-		LED
-		<input type="button" name="led_on" value="On" onclick="_on_led_on_pressed()">
-		<input type="button" name="led_off" value="Off" onclick="_on_led_off_pressed()">
-		</h3>
+		<!-- PUMP -->
+		<div id="hcontainer">
+			<div><h4>Pump</h4></div>
+			<div id="hcontainer">
+				<div>
+					<input id="pump_toggle" type="checkbox" name="pump_toggle" onclick="_on_pump_toggled(this)">
+				</div>
+			</div>
+		</div>
 
 	</body> 
 
