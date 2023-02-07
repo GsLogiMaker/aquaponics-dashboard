@@ -22,6 +22,10 @@ def main():
 	global client_tower01
 	global client_status
 
+	#ip = input("IP address of mqtt server: ")
+	#port = input("Port of mqtt server: ")
+	self_port = input("Webpage port: ")
+
 	client_tower01.on_message = _on_got_tower_message
 	client_tower01.connect("192.168.1.125", port=1883)
 	client_tower01.subscribe("#")
@@ -32,7 +36,7 @@ def main():
 	client_status.on_message = _on_got_status_message
 	client_status.loop_start()
 
-	app.run()
+	app.run(port=self_port)
 
 
 @app.route("/", methods=["GET","POST"])
