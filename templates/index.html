@@ -1,0 +1,82 @@
+<html>
+
+	<head>
+
+		<style>
+			textarea {
+				resize: none;
+				width: 100%;
+    			box-sizing: border-box;
+			}
+		</style>
+
+		<script>
+
+			setInterval(process, 3000);
+			process()
+
+			function process() {
+				fetch("/state")
+					.then((response) => response.json())
+					.then((data) => {
+					console.log(data, data.pump_status, data.humidity);
+					document.getElementById("pump_status_label")
+						.innerHTML = data.pump_status;
+					document.getElementById("humidity_label")
+						.innerHTML = data.humidity;
+					});
+			}
+
+			function post(to) {
+				let response = fetch(to, {method: 'POST'});
+				let result = response.json();
+				alert(result.answer);
+			}
+
+			function _on_system_off_pressed() {
+				post("/system_off")
+			}
+
+			function _on_system_on_pressed() {
+				post("/system_on")
+			}
+
+			function _on_led_off_pressed() {
+				post("/led_off")
+			}
+
+			function _on_led_on_pressed() {
+				post("/led_on")
+			}
+
+		</script>
+
+	</head>
+
+	<body>
+
+		<h1>Aquaponics System Control</h1>
+
+		<h3>Message Log</h3>
+		<textarea id="msg_log" name="msg_log" rows="8" cols="100" readonly>
+			{{message_log}}
+		</textarea>
+
+		<div><h3>Pump Status <div id="pump_status_label">-</div></h3></div>
+		<h3>Humidity <div id="humidity_label">-</div></h3>
+
+		<h3>
+		System
+		<input type="button" name="system_on" value="On" onclick="_on_system_on_pressed()">
+		<input type="button" name="system_off" value="Off" onclick="_on_system_off_pressed()">
+		</h3>
+
+		<h3>
+		LED
+		<input type="button" name="led_on" value="On" onclick="_on_led_on_pressed()">
+		<input type="button" name="led_off" value="Off" onclick="_on_led_off_pressed()">
+		</h3>
+
+	</body> 
+
+</html>
