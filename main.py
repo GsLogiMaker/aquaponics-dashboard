@@ -4,6 +4,8 @@ from flask import Flask, request
 from flask import Flask, render_template
 import paho.mqtt.client as mqtt
 
+MESSAGE_LOG_MAX_LENGTH:int = 2000
+
 app = Flask(__name__)
 
 client_tower01 = mqtt.Client()
@@ -125,13 +127,6 @@ def _get_state():
 	return payload
 
 
-@app.route('/led_on', methods=['POST'])
-def _on_led_on():
-	assert request.method == 'POST'
-	led_on()
-	return 200
-
-
 @app.route('/led_off', methods=['POST'])
 def _on_led_off():
 	assert request.method == 'POST'
@@ -139,10 +134,10 @@ def _on_led_off():
 	return 200
 
 
-@app.route('/pump_on', methods=['POST'])
-def _on_pump_on():
+@app.route('/led_on', methods=['POST'])
+def _on_led_on():
 	assert request.method == 'POST'
-	pump_on()
+	led_on()
 	return 200
 
 
@@ -150,6 +145,13 @@ def _on_pump_on():
 def _on_pump_off():
 	assert request.method == 'POST'
 	pump_off()
+	return 200
+
+
+@app.route('/pump_on', methods=['POST'])
+def _on_pump_on():
+	assert request.method == 'POST'
+	pump_on()
 	return 200
 
 
@@ -176,9 +178,10 @@ def _on_got_tower_message(client, userdata, msg):
 	global is_pump_on
 	global is_system_on
 	global is_led_on
+	global MESSAGE_LOG_MAX_LENGTH
 
 	message_log = f"{msg.topic}: {msg.payload.decode('UTF-8')}\n{message_log}"
-	message_log = message_log[:min(len(message_log),1000)]
+	message_log = message_log[:min(len(message_log), MESSAGE_LOG_MAX_LENGTH)]
 	is_new_message = True
 			
 	# Extract the pump status
@@ -187,7 +190,8 @@ def _on_got_tower_message(client, userdata, msg):
 
 	# Extract the system status 
 	if msg.topic == "tower_01/enabled":
-		is_system_on = msg.payload.decode('UTF-8') == "True"
+		is_system_on = msg.payload.decode('UTF-8') == "True" \
+			or msg.payload.decode('UTF-8') == "ON"
 	
 	# Extract the LED status 
 	if msg.topic == "stat/tower01_led/POWER":

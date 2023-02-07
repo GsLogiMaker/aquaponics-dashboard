@@ -1,11 +1,20 @@
-<html>
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
 
 	<head>
-
+		<title>Aquaponics System Control</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+		<link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet"/>
+		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+		<link href="https://getbootstrap.com/docs/5.3/assets/css/docs.css" rel="stylesheet">
+		
 		<style>
 			textarea {
 				resize: none;
 				width: 100%;
+				height: 100%;
     			box-sizing: border-box;
 			}
 			#hcontainer > div
@@ -13,9 +22,8 @@
 				display: inline-block;
 			}
 		</style>
-
 		<script>
-
+			
 			setInterval(process, 3000);
 			process()
 
@@ -23,15 +31,30 @@
 				fetch("/state")
 					.then((response) => response.json())
 					.then((data) => {
-					document.getElementById("humidity_label")
-						.innerHTML = data.humidity;
-
+					// Reset loading indecators
+					document.getElementById("ledtogglespinner")
+						.style.display = "none";
+					document.getElementById("pumptogglespinner")
+						.style.display = "none";
+					document.getElementById("systemtogglespinner")
+						.style.display = "none";
+					
+					if (data.humidity != "") {
+						document.getElementById("humidity_label")
+							.innerHTML = data.humidity;
+						document.getElementById("humidityspinner")
+							.style.display = "none";
+					} else {
+						document.getElementById("humidityspinner")
+							.style.display = null;
+					}
+					
 					// Update buttons
-					document.getElementById("system_toggle")
+					document.getElementById("systemtogglebutton")
 						.checked = data.is_system_on;
-					document.getElementById("led_toggle")
+					document.getElementById("ledtogglebutton")
 						.checked = data.is_led_on;
-					document.getElementById("pump_toggle")
+					document.getElementById("pumptogglebutton")
 						.checked = data.is_pump_on;
 					
 					// Update message log
@@ -47,12 +70,16 @@
 			}
 
 			function post(to) {
-				let response = fetch(to, {method: 'POST'});
-				let result = response.json();
-				alert(result.answer);
+				let response = fetch(to, {method: 'POST'})
+					.then((response) => response.text())
+					.then((data) => {
+						alert(result.answer);
+					})
 			}
 
 			function _on_system_toggled(checkbox) {
+				document.getElementById("systemtogglespinner")
+					.style.display = null;
 				if (checkbox.checked) {
 					post("/system_on");
 				} else {
@@ -61,6 +88,8 @@
 			}
 
 			function _on_led_toggled(checkbox) {
+				document.getElementById("ledtogglespinner")
+					.style.display = null;
 				if (checkbox.checked) {
 					post("/led_on");
 				} else {
@@ -68,62 +97,72 @@
 				}
 			}
 
-
 			function _on_pump_toggled(checkbox) {
+				document.getElementById("pumptogglespinner")
+					.style.display = null;
 				if (checkbox.checked) {
 					post("/pump_on");
 				} else {
 					post("/pump_off");
 				}
 			}
-
 		</script>
-
 	</head>
 
 	<body>
-
-		<h1>Aquaponics System Control</h1>
-
-		<h4>Message Log</h4>
-		<textarea id="msg_log" name="msg_log" rows="8" cols="100" readonly>
-		</textarea>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>
 		
-		<div id="hcontainer">
-			<div><h4>Humidity</h4></div>
-			<div id="humidity_label">-</div>
-		</div>
+		<div style="padding:10px;">
+			<!-- MESSAGE LOG -->
+			<h4>Message Log</h4>
+			<textarea id="msg_log" name="msg_log" rows="8" cols="100" readonly>
+			</textarea>
 
-		<!-- SYSTEM -->
-		<div id="hcontainer">
-			<div><h4>System</h4></div>
+			<!-- HUMIDITY LABEL -->
 			<div id="hcontainer">
+				<div><h4>Humidity</h4></div>
 				<div>
-					<input id="system_toggle" type="checkbox" name="system_toggle" onclick="_on_system_toggled(this)">
+					<span id="humidity_label"></span>
+					<div class="spinner-border spinner-border-sm m-0" role="status" id="humidityspinner">
+						<span class="visually-hidden">Loading...</span>
+					</div>
 				</div>
 			</div>
-		</div>
 
-		<!-- LED -->
-		<div id="hcontainer">
-			<div><h4>LED</h4></div>
-			<div id="hcontainer">
-				<div>
-					<input id="led_toggle" type="checkbox" name="led_toggle" onclick="_on_led_toggled(this)">
-				</div>
+			<!-- CONTROLS GROUP -->
+			<div><h4>Controls</h4></div>
+			<div class="input-group" role="group" aria-label="Controls button group">
 			</div>
-		</div>
 
-		<!-- PUMP -->
-		<div id="hcontainer">
-			<div><h4>Pump</h4></div>
-			<div id="hcontainer">
-				<div>
-					<input id="pump_toggle" type="checkbox" name="pump_toggle" onclick="_on_pump_toggled(this)">
-				</div>
+			<div class="input-group" role="group" aria-label="Controls button group">
+				<!-- SYSTEM GRAPHICS -->
+				<input type="checkbox" class="btn-check" id="systemtogglebutton" onclick="_on_system_toggled(this)">
+				<label class="btn btn-outline-primary" for="systemtogglebutton">
+					System
+					<div class="spinner-border spinner-border-sm" role="status" id="systemtogglespinner">
+						<span class="visually-hidden">Loading...</span>
+					</div>
+				</label>
+				<!-- LED GRAPHICS -->
+				<input type="checkbox" class="btn-check" id="ledtogglebutton" onclick="_on_led_toggled(this)">
+				<label class="btn btn-outline-primary" for="ledtogglebutton">
+					LED
+					<div class="spinner-border spinner-border-sm" role="status" id="ledtogglespinner">
+						<span class="visually-hidden">Loading...</span>
+					</div>
+				</label>
+				<!-- PUMP GRAPHICS -->
+				<input type="checkbox" class="btn-check" id="pumptogglebutton" onclick="_on_pump_toggled(this)">
+				<label class="btn btn-outline-primary" for="pumptogglebutton">
+					Pump
+					<div class="spinner-border spinner-border-sm" role="status" id="pumptogglespinner">
+						<span class="visually-hidden">Loading...</span>
+					</div>
+				</label>
+				<div></div><!-- Extra div to make buttons square -->
 			</div>
+			
 		</div>
-
 	</body> 
 
 </html>
