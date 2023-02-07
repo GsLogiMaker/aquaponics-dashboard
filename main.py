@@ -92,14 +92,14 @@ def system_off():
 	"""
 	Turns the aquaponics system off.
 	"""
-	client_tower01.publish("tower_01/enabled", payload=False)
+	client_tower01.publish("tower_01/enabled", payload="false")
 
 
 def system_on():
 	"""
 	Turns the aquaponics system on.
 	"""
-	client_tower01.publish("tower_01/enabled", payload=True)
+	client_tower01.publish("tower_01/enabled", payload="true")
 
 
 @app.route('/message', methods=['GET'])
@@ -131,42 +131,42 @@ def _get_state():
 def _on_led_off():
 	assert request.method == 'POST'
 	led_off()
-	return 200
+	return "Ok"
 
 
 @app.route('/led_on', methods=['POST'])
 def _on_led_on():
 	assert request.method == 'POST'
 	led_on()
-	return 200
+	return "Ok"
 
 
 @app.route('/pump_off', methods=['POST'])
 def _on_pump_off():
 	assert request.method == 'POST'
 	pump_off()
-	return 200
+	return "Ok"
 
 
 @app.route('/pump_on', methods=['POST'])
 def _on_pump_on():
 	assert request.method == 'POST'
 	pump_on()
-	return 200
+	return "Ok"
 
 
 @app.route('/system_off', methods=['POST'])
 def _on_system_off():
 	assert request.method == 'POST'
 	system_off()
-	return 200
+	return "Ok"
 
 
 @app.route('/system_on', methods=['POST'])
 def _on_system_on():
 	assert request.method == 'POST'
 	system_on()
-	return 200
+	return "Ok"
 
 
 def _on_got_tower_message(client, userdata, msg):
@@ -190,8 +190,9 @@ def _on_got_tower_message(client, userdata, msg):
 
 	# Extract the system status 
 	if msg.topic == "tower_01/enabled":
-		is_system_on = msg.payload.decode('UTF-8') == "True" \
-			or msg.payload.decode('UTF-8') == "ON"
+		is_system_on = msg.payload.decode('UTF-8').lower() == "true" \
+			or msg.payload.decode('UTF-8').lower() == "on" \
+			or msg.payload.decode('UTF-8') == True
 	
 	# Extract the LED status 
 	if msg.topic == "stat/tower01_led/POWER":

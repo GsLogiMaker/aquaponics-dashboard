@@ -66,44 +66,121 @@
 									.innerHTML = data;
 							})
 					}
-					});
+
+					update_buttons()
+				});
 			}
 
 			function post(to) {
 				let response = fetch(to, {method: 'POST'})
 					.then((response) => response.text())
 					.then((data) => {
-						alert(result.answer);
+						if (data.toLowerCase() != "ok") {
+							alert(data);
+						}
 					})
 			}
 
-			function _on_system_toggled(checkbox) {
+			function led_off(){
+				post("/led_off");
+				document.getElementById("ledtogglebutton")
+					.checked = false;
+				document.getElementById("ledtogglespinner")
+					.style.display = null;
+			}
+
+			function led_on(){
+				if (document.getElementById("systemtogglebutton").checked) {
+					post("/led_on");
+					document.getElementById("ledtogglebutton")
+						.checked = true;
+					document.getElementById("ledtogglespinner")
+						.style.display = null;
+				} else {
+					led_off()
+				}
+			}
+
+			function pump_off(){
+				post("/pump_off");
+				document.getElementById("pumptogglebutton")
+					.checked = false;
+				document.getElementById("pumptogglespinner")
+					.style.display = null;
+			}
+
+			function pump_on(){
+				if (document.getElementById("systemtogglebutton").checked) {
+					post("/pump_on");
+					document.getElementById("pumptogglebutton")
+						.checked = true;
+					document.getElementById("pumptogglespinner")
+						.style.display = null;
+				} else {
+					pump_off()
+				}
+			}
+
+			function system_off(){
+				post("/system_off");
+				post("/led_off");
+				post("/pump_off");
+				document.getElementById("systemtogglebutton")
+					.checked = false;
 				document.getElementById("systemtogglespinner")
 					.style.display = null;
-				if (checkbox.checked) {
-					post("/system_on");
+				update_buttons()
+			}
+
+			function system_on(){
+				post("/system_on");
+				document.getElementById("systemtogglebutton")
+					.checked = true;
+				document.getElementById("systemtogglespinner")
+					.style.display = null;
+				update_buttons()
+			}
+
+			function update_buttons() {
+				if (document.getElementById("systemtogglebutton").checked) {
+					document.getElementById("ledtogglebutton")
+						.disabled = false;
+					document.getElementById("pumptogglebutton")
+						.disabled = false;
 				} else {
-					post("/system_off");
+					document.getElementById("ledtogglebutton")
+						.disabled = true;
+					document.getElementById("pumptogglebutton")
+						.disabled = true;
+					document.getElementById("ledtogglebutton")
+						.checked = false;
+					document.getElementById("pumptogglebutton")
+						.checked = false;
+				}
+			}
+
+			function _on_system_toggled(checkbox) {
+				if (checkbox.checked) {
+					system_on();
+				} else {
+					system_off()
 				}
 			}
 
 			function _on_led_toggled(checkbox) {
-				document.getElementById("ledtogglespinner")
-					.style.display = null;
 				if (checkbox.checked) {
-					post("/led_on");
+					led_on();
 				} else {
-					post("/led_off");
+					led_off();
 				}
 			}
 
 			function _on_pump_toggled(checkbox) {
-				document.getElementById("pumptogglespinner")
-					.style.display = null;
+				
 				if (checkbox.checked) {
-					post("/pump_on");
+					pump_on();
 				} else {
-					post("/pump_off");
+					pump_off();
 				}
 			}
 		</script>
